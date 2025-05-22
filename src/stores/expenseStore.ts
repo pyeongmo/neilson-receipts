@@ -1,5 +1,8 @@
 import {defineStore} from 'pinia';
-import {collection, onSnapshot, orderBy, query, type Unsubscribe, doc, updateDoc, deleteDoc } from "firebase/firestore";
+import {
+    collection, query, orderBy, onSnapshot, type Unsubscribe,
+    doc, updateDoc, deleteDoc, Timestamp
+} from "firebase/firestore";
 import { db, auth, uploadReceiptImage } from '../firebaseConfig';
 import {type Expense} from '../types/Expense';
 
@@ -106,7 +109,7 @@ export const useExpenseStore = defineStore('expense', {
                 const expenseRef = doc(db, 'expenses', expenseId);
                 await updateDoc(expenseRef, {
                     isProcessed: !currentStatus, // 현재 상태의 반대로 토글
-                    updatedAt: new Date(), // 업데이트 시간 기록 (Date 객체로 전달하면 Firestore Timestamp로 변환됨)
+                    updatedAt: Timestamp.now(),
                 });
                 console.log(`Expense ${expenseId} processed status toggled to ${!currentStatus}`);
             } catch (error: any) {
@@ -136,6 +139,54 @@ export const useExpenseStore = defineStore('expense', {
             } catch (error: any) {
                 console.error('Error deleting expense:', error.message);
                 this.error = `지출 내역 삭제 실패: ${error.message}`;
+            } finally {
+                this.loading = false;
+            }
+        },
+        /**
+         * 특정 지출 내역의 필드를 업데이트합니다.
+         * @param expenseId 업데이트할 지출 내역의 ID
+         * @param field 업데이트할 필드 이름 (예: 'amount', 'date')
+         * @param value 새로운 값
+         */
+        async updateExpenseField(expenseId: string, field: 'amount' | 'date', value: any) {
+            if (!auth.currentUser) {
+                this.error = '로그인해야 지출 내역을 수정할 수 있습니다.';
+                return;
+            }
+
+            this.loading = true;
+            this.error = null;
+
+            try {
+                const expenseRef = doc(db, 'expenses', expenseId);
+                let updateData: { [key: string]: any } = {
+                    updatedAt: Timestamp.now(), // 업데이트 시간 기록
+                };
+
+                if (field === 'amount') {
+                    const parsedAmount = parseFloat(value);
+                    if (isNaN(parsedAmount) || parsedAmount < 0) {
+                        // noinspection ExceptionCaughtLocallyJS
+                        throw new Error('유효하지 않은 금액입니다. 숫자를 입력해주세요.');
+                    }
+                    updateData.amount = parsedAmount;
+                } else if (field === 'date') {
+                    // 'YYYY-MM-DD' 형식의 문자열을 Date 객체로 변환
+                    const parsedDate = new Date(value);
+                    if (isNaN(parsedDate.getTime())) {
+                        // noinspection ExceptionCaughtLocallyJS
+                        throw new Error('유효하지 않은 날짜 형식입니다. YYYY-MM-DD 형식으로 입력해주세요.');
+                    }
+                    updateData.date = Timestamp.fromDate(parsedDate); // Date 객체를 Firestore Timestamp로 변환
+                }
+
+                await updateDoc(expenseRef, updateData);
+                console.log(`Expense ${expenseId} field '${field}' updated successfully.`);
+
+            } catch (error: any) {
+                console.error(`Error updating expense field ${field}:`, error.message);
+                this.error = `지출 내역 수정 실패 (${field}): ${error.message}`;
             } finally {
                 this.loading = false;
             }
