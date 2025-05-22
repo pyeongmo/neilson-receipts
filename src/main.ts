@@ -1,8 +1,8 @@
-// src/main.ts
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import App from './App.vue';
 import { useAuthStore } from './stores/authStore'; // authStore 임포트
+import './index.css' // Tailwind CSS를 위한 전역 CSS 파일 임포트
 
 const app = createApp(App);
 const pinia = createPinia();
