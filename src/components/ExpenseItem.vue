@@ -26,15 +26,24 @@
       </h3>
       <div class="flex items-center justify-end gap-3 flex-wrap">
         <small class="text-gray-600 whitespace-nowrap text-sm">{{ expense.uploaderEmail?.split('@')[0] || expense.userId }}</small>
-        <div v-if="expense.userId === authStore.currentUserUid" class="flex items-center text-sm text-gray-700 whitespace-nowrap">
-          <label :for="'processed-' + expense.id" class="p-2 rounded-lg bg-gray-200 cursor-pointer transition duration-200 ease-in-out hover:bg-gray-300"
-                 :class="{'!bg-lime-500 !text-white hover:!bg-lime-600': expense.isProcessed}">
+        <div class="flex items-center text-sm text-gray-700 whitespace-nowrap">
+          <label :for="'processed-' + expense.id"
+                 :class="[
+              'p-2 rounded-lg transition duration-200 ease-in-out',
+              {
+                'bg-gray-200 cursor-pointer hover:bg-gray-300': expense.userId === authStore.currentUserUid && !expense.isProcessed, // 본인 항목, 미완료 상태일 때
+                '!bg-lime-500 !text-white hover:!bg-lime-600': expense.userId === authStore.currentUserUid && expense.isProcessed,   // 본인 항목, 완료 상태일 때
+                'bg-gray-200 cursor-default': expense.userId !== authStore.currentUserUid // 타인 항목일 때
+              }
+            ]"
+                 :title="expense.userId !== authStore.currentUserUid ? '업로더가 조작 가능' : ''"
+          >
             <input
                 type="checkbox"
                 :id="'processed-' + expense.id"
                 :checked="expense.isProcessed"
                 @change="toggleProcessedStatus"
-                class="mr-1 transform scale-110 cursor-pointer"
+                class="mr-1 transform scale-110" :class="{'cursor-pointer': expense.userId === authStore.currentUserUid}" :disabled="expense.userId !== authStore.currentUserUid"
             />
             완료
           </label>
@@ -97,8 +106,9 @@ const formatDateToYYMMDD = (timestamp: Timestamp | undefined) => {
   return date.toISOString().slice(0, 10);
 };
 
-// 금액 수정
+// 금액 수정 (여전히 본인만 수정 가능하도록 v-if 유지)
 const editAmountField = async (expenseId: string, currentAmount: number) => {
+  if (props.expense.userId !== authStore.currentUserUid) return; // 본인만 수정 가능하도록 추가 검증
   const newAmountStr = window.prompt(`금액을 수정하세요: (현재: ${currentAmount.toLocaleString()}원)`, String(currentAmount));
   if (newAmountStr !== null && newAmountStr.trim() !== '') {
     await expenseStore.updateExpenseField(expenseId, 'amount', newAmountStr);
@@ -107,8 +117,9 @@ const editAmountField = async (expenseId: string, currentAmount: number) => {
   }
 };
 
-// 날짜 수정
+// 날짜 수정 (여전히 본인만 수정 가능하도록 v-if 유지)
 const editDateField = async (expenseId: string, currentDate: string) => {
+  if (props.expense.userId !== authStore.currentUserUid) return; // 본인만 수정 가능하도록 추가 검증
   const newDateStr = window.prompt(`날짜를 수정하세요: (현재: ${currentDate})\n형식:YYYY-MM-DD`, currentDate);
   if (newDateStr !== null && newDateStr.trim() !== '') {
     await expenseStore.updateExpenseField(expenseId, 'date', newDateStr);
@@ -117,13 +128,15 @@ const editDateField = async (expenseId: string, currentDate: string) => {
   }
 };
 
-// 처리 완료 상태 토글
+// 처리 완료 상태 토글 (본인만 조작 가능)
 const toggleProcessedStatus = async () => {
+  if (props.expense.userId !== authStore.currentUserUid) return; // 본인만 토글 가능하도록 추가 검증
   await expenseStore.toggleExpenseProcessedStatus(props.expense.id!, props.expense.isProcessed);
 };
 
-// 지출 내역 삭제 확인
+// 지출 내역 삭제 확인 (본인만 삭제 가능)
 const confirmDelete = async () => {
+  if (props.expense.userId !== authStore.currentUserUid) return; // 본인만 삭제 가능하도록 추가 검증
   if (confirm('이 지출 내역과 연결된 이미지를 정말로 삭제하시겠습니까?')) {
     await expenseStore.deleteExpense(props.expense.id!);
   }
