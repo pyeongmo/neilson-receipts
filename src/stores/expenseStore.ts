@@ -1,6 +1,6 @@
 import {defineStore} from 'pinia';
 import {
-    collection, query, orderBy, onSnapshot, type Unsubscribe,
+    collection, query, orderBy, limit, onSnapshot, type Unsubscribe,
     doc, updateDoc, deleteDoc, Timestamp
 } from "firebase/firestore";
 import { db, auth, uploadReceiptImage } from '../firebaseConfig';
@@ -35,9 +35,11 @@ export const useExpenseStore = defineStore('expense', {
             }
 
             try {
+                // 최신 10개만 가져옴
                 const q = query(
                     collection(db, 'expenses'),
-                    orderBy('createdAt', 'desc') // 최신순으로 정렬
+                    orderBy('createdAt', 'desc'),
+                    limit(10)
                 );
 
                 this.unsubscribe = onSnapshot(q, (snapshot) => {

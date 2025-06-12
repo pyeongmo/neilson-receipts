@@ -7,7 +7,7 @@
   "scripts": {
     "serve": "vite",
     "build": "vue-tsc -b && vite build",
-    "deploy": "firebase deploy --only hosting"
+    "deploy": "firebase login --reauth && firebase deploy --only hosting"
   },
   "dependencies": {
     "firebase": "^11.8.0",
