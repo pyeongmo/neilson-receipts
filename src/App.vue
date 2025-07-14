@@ -13,9 +13,20 @@
       <div v-if="authStore.loading" class="text-lg">인증 상태 확인 중...</div>
       <div v-else-if="authStore.isLoggedIn" class="flex items-center justify-between w-full flex-wrap gap-4">
         <p class="text-lg font-medium flex-grow">환영합니다, <strong class="text-blue-700">{{ authStore.currentUserEmail?.split('@')[0] }}</strong>님!</p>
-        <button @click="handleLogout" class="px-5 py-2 bg-red-500 text-white rounded-lg text-base font-bold cursor-pointer transition duration-300 ease-in-out whitespace-nowrap hover:bg-red-600 hover:translate-y-px">
-          로그아웃
-        </button>
+        <div class="flex items-center gap-3">
+          <button
+              @click="openSummaryModal"
+              class="px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75 transition-colors duration-200"
+          >
+            미처리 현황
+          </button>
+          <button
+              @click="handleLogout"
+              class="px-4 py-2 rounded-lg bg-red-500 text-white font-semibold shadow-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition-colors duration-200"
+          >
+            로그아웃
+          </button>
+        </div>
       </div>
       <div v-else class="flex flex-col items-start gap-4 w-full">
         <p class="text-lg font-medium">로그인이 필요합니다.</p>
@@ -30,18 +41,32 @@
       <ReceiptUploader class="flex-grow w-full lg:w-auto" />
       <ExpenseList class="flex-grow w-full lg:w-auto" />
     </main>
+    <SummaryModal v-if="summaryModalOpen" :summary-data="summaryData" @close="closeSummaryModal" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { watch, nextTick, onMounted, onUnmounted } from 'vue';
+import { watch, nextTick, onMounted, onUnmounted, ref } from 'vue';
 import { useAuthStore } from './stores/authStore';
 import { useExpenseStore } from './stores/expenseStore';
 import ExpenseList from "./components/ExpenseList.vue";
 import ReceiptUploader from "./components/ReceiptUploader.vue";
+import SummaryModal from "./components/SummaryModal.vue";
 
 const authStore = useAuthStore();
 const expenseStore = useExpenseStore();
+
+const summaryModalOpen = ref(false);
+const summaryData = ref<Record<string, number>>({}); // 요약 데이터를 저장할 ref
+
+const openSummaryModal = async () => {
+  summaryData.value = await expenseStore.getUnprocessedSummary();
+  summaryModalOpen.value = true;
+};
+
+const closeSummaryModal = () => {
+  summaryModalOpen.value = false;
+};
 
 let savedWindowScrollPosition: number = 0;
 let unsubscribeFromExpenseActions: (() => void) | null = null;

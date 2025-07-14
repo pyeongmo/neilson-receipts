@@ -1,7 +1,8 @@
 import {defineStore} from 'pinia';
 import {
     collection, query, orderBy, limit, onSnapshot, type Unsubscribe,
-    doc, updateDoc, deleteDoc, Timestamp
+    doc, updateDoc, deleteDoc, Timestamp,
+    where, getDocs,
 } from "firebase/firestore";
 import { db, auth, uploadReceiptImage } from '../firebaseConfig';
 import {type Expense} from '../types/Expense';
@@ -19,6 +20,7 @@ export const useExpenseStore = defineStore('expense', {
         uploadProgress: 0 // 업로드 진행률 (0-100)
     }),
     actions: {
+        // 실시간으로 지출 내역을 불러오는 함수
         async fetchExpenses() {
             if (!auth.currentUser) {
                 this.error = '로그인이 필요합니다.';
@@ -72,6 +74,36 @@ export const useExpenseStore = defineStore('expense', {
             }
             this.expenses = []; // 로그아웃 시 목록 비우기
         },
+        /**
+         * 완료되지 않은 영수증을 사용자(이메일)별로 묶어 금액을 요약합니다.
+         * @returns {Promise<Record<string, number>>} 사용자 이메일을 키로 하고 총 금액을 값으로 하는 객체.
+         */
+        async getUnprocessedSummary(): Promise<Record<string, number>> {
+            this.loading = true;
+            this.error = null;
+            const summary: Record<string, number> = {};
+
+            try {
+                const q = query(
+                    collection(db, 'expenses'),
+                    where('isProcessed', '==', false)
+                );
+                const querySnapshot = await getDocs(q);
+                querySnapshot.forEach((doc) => {
+                    const expense = doc.data() as Expense;
+                    const uploaderEmail = expense.uploaderEmail || '알 수 없음';
+                    summary[uploaderEmail] = (summary[uploaderEmail] || 0) + (expense.amount || 0);
+                });
+                return summary;
+            } catch (e: any) {
+                console.error("Error fetching unprocessed summary: ", e);
+                this.error = '미처리 영수증 요약을 불러오는 데 실패했습니다: ' + e.message;
+                return {};
+            } finally {
+                this.loading = false;
+            }
+        },
+        // 새로운 지출 내역 추가
         async uploadReceipt(file: File) {
             if (!auth.currentUser) {
                 this.uploadError = '로그인해야 영수증을 업로드할 수 있습니다.';
@@ -119,7 +151,6 @@ export const useExpenseStore = defineStore('expense', {
                 this.error = `지출 내역 업데이트 실패: ${error.message}`;
             }
         },
-
         /**
          * 특정 지출 내역을 Firestore에서 삭제하도록 요청합니다.
          * 연결된 Storage 이미지는 Cloud Functions가 처리합니다.
