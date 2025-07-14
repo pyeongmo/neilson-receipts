@@ -7,10 +7,6 @@ service firebase.storage {
       allow read: if true; // 누구나 읽기 가능
 
       // 'receipts' 폴더 내의 파일에 대한 쓰기 규칙 (로그인한 사용자만 본인의 폴더에 쓰기 가능)
-      // 이 규칙은 특정 경로에만 적용됩니다.
-      // 중요: 'request.resource.metadata.uid'는 Cloud Functions에서 설정해야 합니다.
-      // 현재 로직에서는 `receipts/{userId}/{fileName}` 형태로 경로에 userId가 있으므로,
-      // `request.auth.uid == userId`를 사용합니다.
       match /receipts/{userId}/{fileName} {
         allow write: if request.auth != null && request.auth.uid == userId;
       }

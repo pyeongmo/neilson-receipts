@@ -7,13 +7,10 @@ service cloud.firestore {
       allow read: if request.auth != null;
 
       // 쓰기 (생성, 업데이트, 삭제)는 해당 문서를 생성한 사용자에게만 허용합니다.
-      // 이는 각 사용자가 자신의 지출 내역만 수정하거나 삭제할 수 있도록 하기 위함입니다.
-      // 'create'와 'update'는 새로운 문서 생성 시 request.resource.data.userId를,
-      // 'delete'는 기존 문서 삭제 시 resource.data.userId를 확인합니다.
       allow write: if request.auth != null && request.auth.uid == resource.data.userId;
     }
 
-    // 다른 컬렉션에 대한 기본 규칙 (필요에 따라 추가)
+    // 다른 컬렉션에 대한 기본 규칙
     match /{document=**} {
       allow read, write: if false; // 기본적으로 모든 접근을 차단합니다.
     }

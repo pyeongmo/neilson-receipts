@@ -4,7 +4,14 @@ import {
     doc, updateDoc, deleteDoc, Timestamp,
     where, getDocs,
 } from "firebase/firestore";
-import { db, auth, uploadReceiptImage } from '../firebaseConfig';
+import {
+    ref,
+    uploadBytesResumable,
+    getDownloadURL,
+    type StorageReference,
+    type UploadTask
+} from "firebase/storage";
+import {db, auth, storage} from '../firebaseConfig';
 import {type Expense} from '../types/Expense';
 
 export const useExpenseStore = defineStore('expense', {
@@ -226,3 +233,49 @@ export const useExpenseStore = defineStore('expense', {
         },
     },
 });
+
+
+/**
+ * Firebase Storage에 파일을 업로드하는 함수
+ * @param file 업로드할 File 객체
+ * @param userId 현재 로그인한 사용자의 UID
+ * @param onProgress (선택 사항) 업로드 진행률을 업데이트할 콜백 함수 (0-100)
+ * @returns Promise<string> 업로드된 파일의 다운로드 URL
+ */
+export async function uploadReceiptImage(
+    file: File,
+    userId: string,
+    onProgress?: (progress: number) => void // <-- onProgress 콜백 추가
+): Promise<string> {
+    const fileName = `${Date.now()}_${file.name}`;
+    const storageRef: StorageReference = ref(storage, `receipts/${userId}/${fileName}`);
+
+    const uploadTask: UploadTask = uploadBytesResumable(storageRef, file);
+
+    return new Promise((resolve, reject) => {
+        uploadTask.on(
+            'state_changed',
+            (snapshot) => {
+                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                // console.log(`Upload is ${progress}% done`);
+                if (onProgress) { // 콜백 함수가 있다면 호출
+                    onProgress(progress);
+                }
+            },
+            (error) => {
+                console.error("Image upload failed:", error);
+                reject(error);
+            },
+            async () => {
+                try {
+                    const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                    console.log("Image uploaded successfully, URL:", downloadURL);
+                    resolve(downloadURL);
+                } catch (error) {
+                    console.error("Failed to get download URL:", error);
+                    reject(error);
+                }
+            }
+        );
+    });
+}
