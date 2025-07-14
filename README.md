@@ -110,19 +110,6 @@ neilson-receipts/
 ### 패키지 관리자
 프로젝트는 `pnpm` 패키지 매니저를 사용합니다. (`packageManager: "pnpm@10.10.0"`)
 
-## 📊 데이터 모델
-
-### 사용자 프로필 (User.ts)
-```ts
-interface UserProfile {
-  userId: string;
-  email: string;
-  userName?: string;
-  corporateCards?: { [key: string]: { cardNumber: string; bankName: string } };
-  bankAccounts?: { [key: string]: { accountNumber: string; bankName: string; accountHolder: string } };
-}
-```
-
 ## 🔐 보안
 
 - Google OAuth 2.0 인증
