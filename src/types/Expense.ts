@@ -10,6 +10,7 @@ export interface Expense {
     category: string;
     description: string;
     originalImageUrl: string;
+    thumbnailUrl?: string;
     isProcessed: boolean
     createdAt: Timestamp;
     updatedAt: Timestamp;

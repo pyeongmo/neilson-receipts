@@ -10,6 +10,7 @@ export interface ExpenseToSave {
     category: string;
     description: string;
     originalImageUrl: string;
+    thumbnailUrl: string;
     isProcessed: boolean;
     createdAt: admin.firestore.Timestamp | admin.firestore.FieldValue; // FieldValue를 허용
     updatedAt: admin.firestore.Timestamp | admin.firestore.FieldValue; // FieldValue를 허용

@@ -61,9 +61,9 @@
       </div>
     </div>
     <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4">
-      <div v-if="expense.originalImageUrl"
+      <div v-if="expense.thumbnailUrl || expense.originalImageUrl"
            class="w-[150px] h-[150px] flex-shrink-0 border border-gray-300 rounded-md overflow-hidden bg-gray-100 flex items-center justify-center">
-        <img :src="expense.originalImageUrl"
+        <img :src="expense.thumbnailUrl || expense.originalImageUrl"
              alt="영수증 이미지"
              class="max-w-full max-h-full object-contain cursor-pointer hover:opacity-80 transition-opacity"
              @click="openImageModal(expense.originalImageUrl)">
