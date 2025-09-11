@@ -70,20 +70,17 @@ neilson-receipts/
 
 ### 설치
 
-1. **프로젝트 클론**
-    ```bash
-    git clone <repository-url>
-    cd neilson-receipts
-    ```
-2. **의존성 설치**
+1. **의존성 설치**
     ```bash
     pnpm install
     ```
-3. **Firebase 설정**
-    - Firebase 프로젝트 생성
-    - 에 Firebase 설정 정보 입력 `firebaseConfig.ts`
+2. **Firebase 설정**
+    - Firebase CLI 설치: `npm i -g firebase-tools`
+    - 로그인: `firebase login`
+    - `src/firebaseConfig.ts`에 Firebase 설정 정보 입력
+    - Gemini API 키 등록: `firebase functions:config:set googleai.apikey="YOUR_GOOGLEAI_API_KEY"`
     - Firestore, Authentication, Storage 활성화
-4. **개발 서버 실행**
+3. **개발 서버 실행**
     ```bash
     pnpm run serve
     ```

@@ -1,14 +1,29 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
-import { DocumentProcessorServiceClient } from '@google-cloud/documentai/build/src/v1';
+import { Timestamp, FieldValue } from 'firebase-admin/firestore';
+import { genkit } from 'genkit';
+import { z } from 'zod';
+import { googleAI, gemini25FlashLite } from '@genkit-ai/googleai';
 import { ExpenseToSave } from './types';
 import * as sharp from 'sharp';
 
-const documentAiClient = new DocumentProcessorServiceClient();
+// Genkit 초기화
+const ai = genkit({
+  plugins: [
+    googleAI({
+      apiKey: functions.config().googleai?.apikey as string,
+    }),
+  ],
+});
 
-const projectId = process.env.GCLOUD_PROJECT;
-const location = 'us';
-const processorId = 'd14c5449ea493476';
+// 구조화 출력 스키마 정의
+const ReceiptSchema = z.object({
+  fullText: z.string().describe('인식한 전체 텍스트'),
+  totalAmount: z.number().nullable().describe('총 결제금액. 없으면 null'),
+  dateIso: z.string().nullable().describe('구매일자 ISO8601 (예: 2024-12-31). 없으면 null'),
+  merchant: z.string().nullable().describe('가맹점명. 없으면 null'),
+  category: z.string().nullable().describe('카테고리. 없으면 null'),
+});
 
 export const processReceiptImage = functions.storage.object().onFinalize(async (object) => {
   const db = admin.firestore();
@@ -54,7 +69,7 @@ export const processReceiptImage = functions.storage.object().onFinalize(async (
 
   let fullText = '영수증에서 텍스트를 찾을 수 없습니다.';
   let extractedAmount: number | null = null;
-  let extractedDate: admin.firestore.Timestamp | null = null;
+  let extractedDate: Timestamp | null = null;
   let extractedMerchant = '알 수 없음';
   let extractedCategory = '미분류';
   let thumbnailUrl: string | null = null;
@@ -62,7 +77,6 @@ export const processReceiptImage = functions.storage.object().onFinalize(async (
   try {
     const file = storage.bucket(fileBucket).file(filePath);
     const [fileContents] = await file.download();
-    const mimeType = object.contentType;
 
     // --- 썸네일 생성 및 업로드 로직 추가 시작 ---
     const thumbnailName = `receipts/${userId}/thumbnails/${pathSegments.slice(2).join('/')}_150x150.webp`;
@@ -83,64 +97,55 @@ export const processReceiptImage = functions.storage.object().onFinalize(async (
     thumbnailUrl = `https://storage.googleapis.com/${fileBucket}/${encodeURIComponent(thumbnailName).replace(/%2F/g, '/')}`;
     // --- 썸네일 생성 및 업로드 로직 추가 종료 ---
 
-    // Document AI 처리 로직 (기존 코드와 동일)
-    const name = `projects/${projectId}/locations/${location}/processors/${processorId}`;
-    const request = {
-      name,
-      rawDocument: {
-        content: fileContents.toString('base64'),
-        mimeType: mimeType,
-      },
-    };
-    console.log(`Sending image to Document AI processor: ${processorId}`);
-    const [result] = await documentAiClient.processDocument(request);
-    const document = result.document;
+    // Gemini(Genkit)로 멀티모달 분석 및 구조화 추출
+    console.log('Sending image to Gemini via Genkit');
+    const prompt = `
+다음 이미지는 영수증입니다. 한국어/영문 혼합일 수 있습니다.
+- 총 결제금액(totalAmount)을 숫자로 추출하세요(통화기호, 콤마 제거).
+- 구매일자(dateIso)는 가능한 ISO8601(YYYY-MM-DD) 또는 완전한 날짜로 보정하세요.
+- 가맹점명(merchant), 카테고리(category)도 가능하면 추출하세요.
+- 추가 텍스트는 fullText로 원문을 최대한 포함하세요.
+응답은 반드시 JSON 형식만 출력하세요.
+    `.trim();
 
-    if (document && document.text) {
-      fullText = document.text;
-      console.log('Document AI Raw Text:', fullText);
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    const result = await ai.generate({
+      model: gemini25FlashLite,
+      prompt: [
+        { text: prompt },
+        { text: '이 이미지에서 정보를 추출해 주세요.' },
+        { media: { contentType: object.contentType, url: file.publicUrl() } },
+      ],
+      output: { format: 'json', schema: ReceiptSchema },
+    });
 
-      if (document.entities && document.entities.length > 0) {
-        document.entities.forEach((entity: any) => {
-          console.log(`  Entity: ${entity.type}, Value: ${entity.mentionText}`);
-          switch (entity.type) {
-          case 'total_amount':
-            try {
-              extractedAmount = parseFloat(entity.mentionText.replace(/[^\d.]/g, ''));
-              if (isNaN(extractedAmount)) extractedAmount = null;
-            } catch (e) {
-              console.warn('Failed to parse total_amount:', entity.mentionText, e);
-            }
-            break;
-          case 'purchase_date':
-          case 'receipt_date':
-            try {
-              extractedDate = admin.firestore.Timestamp.fromDate(new Date(entity.mentionText));
-            } catch (e) {
-              console.warn('Failed to parse date:', entity.mentionText, e);
-            }
-            break;
-          case 'merchant_name':
-            extractedMerchant = entity.mentionText || '알 수 없음';
-            break;
-          case 'category':
-            extractedCategory = entity.mentionText || '미분류';
-            break;
+    const parsed = result.output;
+    if (parsed) {
+      fullText = parsed.fullText || fullText;
+      extractedAmount = typeof parsed.totalAmount === 'number' ? parsed.totalAmount : null;
+
+      if (parsed.dateIso) {
+        try {
+          const d = new Date(parsed.dateIso);
+          if (!isNaN(d.getTime())) {
+            extractedDate = Timestamp.fromDate(d);
           }
-        });
-      } else {
-        console.log('No entities extracted by Document AI.');
+        } catch (e) {
+          console.warn('Failed to parse dateIso from Gemini:', parsed.dateIso, e);
+        }
       }
+      if (parsed.merchant) extractedMerchant = parsed.merchant;
+      if (parsed.category) extractedCategory = parsed.category;
     } else {
-      console.log('No text or document found from Document AI.');
+      console.log('No structured output returned by Gemini.');
     }
   } catch (error) {
-    console.error('Error during Document AI or thumbnail processing:', error);
+    console.error('Error during Gemini or thumbnail processing:', error);
     fullText = '영수증 처리 중 오류가 발생했습니다.';
   }
 
   const originalImageUrl = `https://storage.googleapis.com/${fileBucket}/${encodeURIComponent(filePath).replace(/%2F/g, '/')}`;
-
 
   const expenseData: ExpenseToSave = {
     userId: userId,
@@ -153,8 +158,8 @@ export const processReceiptImage = functions.storage.object().onFinalize(async (
     originalImageUrl: originalImageUrl,
     thumbnailUrl: thumbnailUrl || '',
     isProcessed: false,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    createdAt: FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
   };
 
   try {
