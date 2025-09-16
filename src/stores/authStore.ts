@@ -116,7 +116,6 @@ export const useAuthStore = defineStore('auth', {
                 if (!idToken) return;
                 await this.loginWithOneTapCredential(idToken);
               },
-              auto_select: true,
               cancel_on_tap_outside: true,
               context: 'signin',
               itp_support: true,
