@@ -109,6 +109,9 @@ watch(() => expenseStore.loading, (newLoading) => {
 }, { immediate: true });
 
 onMounted(() => {
+  // One Tap 초기화: 현재 비로그인 상태에서 자동 프롬프트 시도
+  authStore.initializeGoogleOneTap();
+
   unsubscribeFromExpenseActions = expenseStore.$onAction(({ name, after, onError }) => {
     if (['toggleExpenseProcessedStatus', 'deleteExpense', 'updateExpenseField'].includes(name)) {
       saveWindowScrollPosition();

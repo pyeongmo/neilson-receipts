@@ -12,3 +12,4 @@ dist
 dist-ssr
 .idea
 src/firebaseConfig.ts
+.env.local
