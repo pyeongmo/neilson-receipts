@@ -13,21 +13,55 @@
     </div>
 
     <div v-else class="flex flex-col gap-5 items-center">
-      <label for="receipt-input" class="inline-flex items-center justify-center p-4 md:p-5 bg-green-500 text-white rounded-lg cursor-pointer text-lg font-bold transition duration-300 ease-in-out w-full box-border shadow-md hover:bg-green-600 hover:translate-y-[-2px]">
-        <!-- @ts-ignore -->
-        <input
-            type="file"
-            id="receipt-input"
-            accept="image/*"
-            capture="environment"
-            @change="handleFileChange"
+      <!-- 숨김 input: 갤러리/파일 선택용 -->
+      <input
+          type="file"
+          id="receipt-file-input"
+          ref="filePickerInput"
+          accept="image/*"
+          @change="handleFileChange"
+          :disabled="expenseStore.uploading"
+          class="hidden"
+      />
+      <!-- 숨김 input: 카메라 촬영용 -->
+      <input
+          type="file"
+          id="receipt-camera-input"
+          ref="cameraInput"
+          accept="image/*"
+          capture="environment"
+          @change="handleFileChange"
+          :disabled="expenseStore.uploading"
+          class="hidden"
+      />
+
+      <!-- 사진 촬영 / 파일 선택 -->
+      <div class="flex gap-3 w-full">
+        <button
+            v-if="canTakePhoto"
+            type="button"
+            @click="takePhoto"
             :disabled="expenseStore.uploading"
-            class="hidden"
-        />
-        <span class="flex items-center">
-          <i class="fas fa-camera mr-3 text-xl"></i> 사진 촬영 또는 파일 선택
-        </span>
-      </label>
+            class="flex-1 inline-flex items-center justify-center p-4 md:p-5 bg-green-500 text-white rounded-lg text-lg font-bold cursor-pointer transition duration-300 ease-in-out box-border shadow-md hover:bg-green-600 hover:translate-y-[-2px] disabled:bg-gray-400 disabled:cursor-not-allowed disabled:shadow-none"
+        >
+          <i class="fas fa-camera mr-3 text-xl"></i>
+          사진 촬영
+        </button>
+        <button
+            type="button"
+            @click="pickFromGallery"
+            :disabled="expenseStore.uploading"
+            :class="[
+            'flex-1 inline-flex items-center justify-center p-4 md:p-5 rounded-lg text-lg font-bold cursor-pointer transition duration-300 ease-in-out box-border disabled:bg-gray-400 disabled:cursor-not-allowed disabled:shadow-none',
+            canTakePhoto
+              ? 'bg-slate-600 text-white shadow-md hover:bg-slate-700 hover:translate-y-[-2px]'
+              : 'bg-indigo-600 text-white shadow-lg hover:bg-indigo-700 hover:translate-y-[-2px]'
+          ]"
+        >
+          <i class="fas fa-image mr-3 text-xl"></i>
+          파일 선택
+        </button>
+      </div>
 
       <div v-if="previewImage" class="mt-2 p-4 border border-gray-200 rounded-lg w-full box-border bg-gray-50">
         <h3 class="text-base text-gray-700 mb-2">미리보기:</h3>
@@ -59,7 +93,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import {onMounted, ref} from "vue";
 import { useAuthStore } from '../stores/authStore';
 import { useExpenseStore } from '../stores/expenseStore';
 
@@ -68,6 +102,18 @@ const expenseStore = useExpenseStore();
 
 const selectedFile = ref<File | null>(null);
 const previewImage = ref<string | null>(null);
+
+const canTakePhoto = ref(false);
+
+const filePickerInput = ref<HTMLInputElement | null>(null);
+const cameraInput = ref<HTMLInputElement | null>(null);
+
+const pickFromGallery = () => {
+  filePickerInput.value?.click();
+};
+const takePhoto = () => {
+  cameraInput.value?.click();
+};
 
 const handleFileChange = (event: Event) => {
   const input = event.target as HTMLInputElement;
@@ -105,4 +151,30 @@ const uploadSelectedFile = async () => {
     expenseStore.uploadError = '업로드할 파일을 선택해주세요.';
   }
 };
+
+// 장치 점검: videoinput 존재 여부 확인
+async function hasCameraDevice(): Promise<boolean> {
+  try {
+    if (!('mediaDevices' in navigator)) return false;
+    const md = navigator.mediaDevices as MediaDevices;
+    if (!md.enumerateDevices) return false;
+    const devices = await md.enumerateDevices();
+    return devices.some(d => d.kind === 'videoinput');
+  } catch {
+    return false;
+  }
+}
+
+// 모바일/태블릿 판별(데스크톱-터치 iPad 포함)
+function isMobileLike(): boolean {
+  const ua = navigator.userAgent || '';
+  const mobileUA = /Android|iPhone|iPad|iPod|Mobile|Windows Phone/i.test(ua);
+  const iPadOnDesktopUA = ua.includes('Mac') && 'ontouchend' in document;
+  return mobileUA || iPadOnDesktopUA;
+}
+
+onMounted(async () => {
+  const [mobile, cam] = await Promise.all([Promise.resolve(isMobileLike()), hasCameraDevice()]);
+  canTakePhoto.value = mobile && cam;
+});
 </script>
