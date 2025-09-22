@@ -14,11 +14,12 @@
 
     <div v-else class="flex flex-col gap-5 items-center">
       <label for="receipt-input" class="inline-flex items-center justify-center p-4 md:p-5 bg-green-500 text-white rounded-lg cursor-pointer text-lg font-bold transition duration-300 ease-in-out w-full box-border shadow-md hover:bg-green-600 hover:translate-y-[-2px]">
+        <!-- @ts-ignore -->
         <input
             type="file"
             id="receipt-input"
             accept="image/*"
-            capture="camera"
+            capture="environment"
             @change="handleFileChange"
             :disabled="expenseStore.uploading"
             class="hidden"
