@@ -18,6 +18,7 @@
             type="file"
             id="receipt-input"
             accept="image/*"
+            capture="camera"
             @change="handleFileChange"
             :disabled="expenseStore.uploading"
             class="hidden"
