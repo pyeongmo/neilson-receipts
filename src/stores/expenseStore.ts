@@ -44,11 +44,11 @@ export const useExpenseStore = defineStore('expense', {
             }
 
             try {
-                // 최신 10개만 가져옴
+                // 최신 20개만 가져옴
                 const q = query(
                     collection(db, 'expenses'),
                     orderBy('createdAt', 'desc'),
-                    limit(10)
+                    limit(20)
                 );
 
                 this.unsubscribe = onSnapshot(q, (snapshot) => {
