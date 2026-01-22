@@ -1,6 +1,6 @@
 <template>
-  <div class="max-w-md mx-auto my-10 p-8 rounded-lg bg-white text-center box-border border border-gray-100">
-    <h2 class="text-3xl font-semibold text-gray-800 mb-6">영수증 업로드</h2>
+  <div class="max-w-md mx-auto my-5 md:my-10 p-5 md:p-8 rounded-lg bg-white text-center box-border border border-gray-100 shadow-sm">
+    <h2 class="text-2xl md:text-3xl font-semibold text-gray-800 mb-6">영수증 업로드</h2>
 
     <div v-if="!authStore.isLoggedIn && !authStore.loading" class="p-4 rounded-lg mb-5 text-yellow-800 bg-yellow-100 border border-yellow-300">
       <p class="text-base">⚠️ 영수증을 업로드하려면 먼저 로그인해야 합니다.</p>
@@ -42,9 +42,9 @@
             type="button"
             @click="takePhoto"
             :disabled="expenseStore.uploading"
-            class="flex-1 inline-flex items-center justify-center p-4 md:p-5 bg-green-500 text-white rounded-lg text-lg font-bold cursor-pointer transition duration-300 ease-in-out box-border hover:bg-green-600 hover:translate-y-[-2px] disabled:bg-gray-400 disabled:cursor-not-allowed"
+            class="flex-1 inline-flex items-center justify-center p-3 md:p-5 bg-green-500 text-white rounded-lg text-base md:text-lg font-bold cursor-pointer transition duration-300 ease-in-out box-border hover:bg-green-600 hover:translate-y-[-2px] disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
-          <i class="fas fa-camera mr-3 text-xl"></i>
+          <i class="fas fa-camera mr-2 md:mr-3 text-lg md:text-xl"></i>
           사진 촬영
         </button>
         <button
@@ -52,13 +52,13 @@
             @click="pickFromGallery"
             :disabled="expenseStore.uploading"
             :class="[
-            'flex-1 inline-flex items-center justify-center p-4 md:p-5 rounded-lg text-lg font-bold cursor-pointer transition duration-300 ease-in-out box-border disabled:bg-gray-400 disabled:cursor-not-allowed',
+            'flex-1 inline-flex items-center justify-center p-3 md:p-5 rounded-lg text-base md:text-lg font-bold cursor-pointer transition duration-300 ease-in-out box-border disabled:bg-gray-400 disabled:cursor-not-allowed',
             canTakePhoto
               ? 'bg-slate-600 text-white hover:bg-slate-700 hover:translate-y-[-2px]'
               : 'bg-primary text-white hover:bg-primary-dark hover:translate-y-[-2px]'
           ]"
         >
-          <i class="fas fa-image mr-3 text-xl"></i>
+          <i class="fas fa-image mr-2 md:mr-3 text-lg md:text-xl"></i>
           파일 선택
         </button>
       </div>

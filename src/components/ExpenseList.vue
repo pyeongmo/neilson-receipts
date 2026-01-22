@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-3xl mx-auto my-10 p-0 box-border">
+  <div class="max-w-3xl mx-auto my-5 md:my-10 p-0 box-border">
     <p v-if="authStore.loading || expenseStore.loading" class="text-center text-gray-600">데이터 로드 중...</p>
     <p v-else-if="!authStore.isLoggedIn" class="text-center text-primary p-5 bg-primary/5 border border-primary/20 rounded-lg mb-5">로그인해야 지출 내역을 볼 수 있습니다.</p>
     <p v-else-if="expenseStore.error" class="text-center text-red-600 p-5 bg-red-50 border border-red-100 rounded-lg mb-5">{{ expenseStore.error }}</p>

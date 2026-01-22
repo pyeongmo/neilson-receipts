@@ -19,7 +19,7 @@
           @click="closeModal"
           class="absolute top-4 right-4 text-gray-700 text-3xl bg-gray-100 rounded-full w-8 h-8 flex items-center justify-center hover:bg-gray-200 transition-colors"
           aria-label="모달 닫기"
-      >&times;</button>
+      ><i class="fa-solid fa-times text-base"></i></button>
     </div>
   </div>
 </template>

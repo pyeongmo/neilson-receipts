@@ -2,7 +2,7 @@
   <div id="app-root" class="flex flex-col min-h-screen bg-gray-100 text-gray-800 font-sans">
     <header
         :class="[
-        'p-5 md:px-8 mb-5 bg-white border-b border-gray-200 flex items-center justify-between flex-wrap gap-4',
+        'p-4 md:p-6 mb-5 bg-white border-b border-gray-200 flex items-center justify-between flex-wrap gap-4',
         {
           'text-primary font-bold': authStore.loading,
           'bg-primary/5 text-primary-dark': authStore.isLoggedIn && !authStore.loading,
@@ -11,18 +11,18 @@
       ]"
     >
       <div v-if="authStore.loading" class="text-lg">인증 상태 확인 중...</div>
-      <div v-else-if="authStore.isLoggedIn" class="flex items-center justify-between w-full flex-wrap gap-4">
-        <p class="text-lg font-medium flex-grow">환영합니다, <strong class="text-primary-dark">{{ authStore.currentUserEmail?.split('@')[0] }}</strong>님!</p>
-        <div class="flex items-center gap-3">
+      <div v-else-if="authStore.isLoggedIn" class="flex items-center justify-between w-full flex-wrap gap-y-2 gap-x-4">
+        <p class="text-base md:text-lg font-medium">환영합니다, <strong class="text-primary-dark">{{ authStore.currentUserEmail?.split('@')[0] }}</strong>님!</p>
+        <div class="flex items-center gap-2 ml-auto">
           <button
               @click="openSummaryModal"
-              class="px-4 py-2 rounded-lg bg-primary text-white font-semibold hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-75 transition-colors duration-200"
+              class="px-3 py-2 md:px-4 md:py-2 rounded-lg bg-white border border-primary text-primary-dark text-sm md:text-base font-semibold hover:bg-primary/10 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-75 transition-colors duration-200 whitespace-nowrap"
           >
             미처리 현황
           </button>
           <button
               @click="handleLogout"
-              class="px-4 py-2 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition-colors duration-200"
+              class="px-3 py-2 md:px-4 md:py-2 rounded-lg bg-white border border-red-200 text-red-500 hover:bg-red-50 transition-colors text-sm md:text-base font-semibold focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 duration-200 whitespace-nowrap"
           >
             로그아웃
           </button>

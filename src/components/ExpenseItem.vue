@@ -1,114 +1,115 @@
 <template>
-  <li :class="['list-none p-5 md:p-6 mb-8 rounded-xl bg-white text-left max-w-xl mx-auto border border-gray-200', { 'bg-primary/5 border-primary/20': expense.status === '수령확인' }]">
-    <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
-      <h3 class="flex-grow text-lg font-semibold whitespace-nowrap overflow-hidden text-ellipsis pr-3">
-        <span
-            @click="editDateField(expense.id!, formatDateToYYMMDD(expense.date))"
-            class="cursor-pointer underline decoration-dotted text-primary hover:text-primary-dark"
-            v-if="expense.userId === authStore.currentUserUid || authStore.isAdmin"
-        >
-          {{ formatDateToYYMMDD(expense.date) }}
-        </span>
-        <span v-else>
-          {{ formatDateToYYMMDD(expense.date) }}
-        </span>
-        <span class="mx-1">|</span>
-        <span
-            @click="editAmountField(expense.id!, expense.amount)"
-            class="cursor-pointer underline decoration-dotted text-primary hover:text-primary-dark"
-            v-if="expense.userId === authStore.currentUserUid || authStore.isAdmin"
-        >
-          {{ expense.amount ? expense.amount.toLocaleString() : '0' }}원
-        </span>
-        <span v-else>
-          {{ expense.amount ? expense.amount.toLocaleString() : '0' }}원
-        </span>
-      </h3>
-      <div class="flex items-center justify-end gap-3 flex-wrap">
-        <small class="text-gray-600 whitespace-nowrap text-sm">{{ expense.uploaderEmail?.split('@')[0] || expense.userId }}</small>
+  <li :class="['list-none p-4 md:p-6 mb-6 rounded-xl bg-white text-left max-w-2xl mx-auto border border-gray-200 shadow-sm transition-all', { 'bg-primary/5 border-primary/20': expense.status === '수령확인' }]">
+    <!-- 상단 정보 영역: 날짜, 금액, 작성자, 상태 -->
+    <div class="flex flex-col gap-3 mb-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg md:text-xl font-bold flex items-center gap-2">
+          <span
+              @click="editDateField(expense.id!, formatDateToYYMMDD(expense.date))"
+              class="cursor-pointer underline decoration-dotted text-primary hover:text-primary-dark transition-colors"
+              v-if="expense.userId === authStore.currentUserUid || authStore.isAdmin"
+          >
+            {{ formatDateToYYMMDD(expense.date) }}
+          </span>
+          <span v-else>{{ formatDateToYYMMDD(expense.date) }}</span>
 
-        <div class="flex items-center text-sm whitespace-nowrap gap-3 bg-gray-50 p-1.5 rounded-lg border border-gray-100">
-          <div class="flex items-center gap-2">
-            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">상태:</span>
-            <span
-                :class="[
-                  'px-2 py-1 rounded-md text-xs font-bold border transition-colors',
-                  expense.status === '수령확인' ? 'bg-primary text-white border-primary' :
-                  expense.status === '이체완료' ? 'bg-blue-100 text-blue-700 border-blue-200' :
-                  expense.status === '보류' ? 'bg-orange-100 text-orange-700 border-orange-200' :
-                  'bg-amber-100 text-amber-700 border-amber-200'
-                ]"
-            >
-              {{ expense.status }}
-            </span>
-          </div>
+          <span class="text-gray-300">|</span>
 
-          <template v-if="expense.userId === authStore.currentUserUid || authStore.isAdmin">
-            <div class="w-px h-4 bg-gray-200 mx-1"></div>
-            <div class="flex items-center gap-1.5">
-              <template v-if="expense.status === '정산신청'">
-                <button @click="updateStatus('이체완료')" class="px-3 py-1 rounded-lg bg-white border border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white transition duration-200 text-xs font-semibold flex items-center gap-1">
-                  <i class="fa-solid fa-paper-plane text-[10px]"></i>
-                  <span>이체완료</span>
-                </button>
-                <button @click="updateStatus('보류')" class="px-2 py-1 rounded-lg bg-white border border-gray-300 text-gray-400 hover:bg-gray-100 transition duration-200 text-[10px] font-medium flex items-center gap-1">
-                  <i class="fa-solid fa-pause text-[9px]"></i>
-                  <span>보류</span>
-                </button>
-              </template>
-              <template v-else-if="expense.status === '보류'">
-                <button @click="updateStatus('정산신청')" class="px-2 py-1 rounded-lg bg-white border border-gray-300 text-gray-400 hover:bg-gray-100 transition duration-200 text-[10px] font-medium flex items-center gap-1">
-                  <i class="fa-solid fa-redo text-[9px]"></i>
-                  <span>정산신청</span>
-                </button>
-              </template>
-              <template v-else-if="expense.status === '이체완료'">
-                <button v-if="expense.userId === authStore.currentUserUid" @click="updateStatus('수령확인')" class="px-3 py-1 rounded-lg bg-white border border-green-500 text-green-500 hover:bg-green-500 hover:text-white transition duration-200 text-xs font-semibold flex items-center gap-1">
-                  <i class="fa-solid fa-check-double text-[10px]"></i>
-                  <span>수령확인</span>
-                </button>
-                <button @click="updateStatus('정산신청')" class="px-2 py-1 rounded-lg bg-white border border-gray-300 text-gray-400 hover:bg-gray-100 transition duration-200 text-[10px] font-medium flex items-center gap-1">
-                  <i class="fa-solid fa-redo text-[9px]"></i>
-                  <span>정산신청</span>
-                </button>
-              </template>
-              <template v-else-if="expense.status === '수령확인'">
-                <button v-if="expense.userId === authStore.currentUserUid" @click="updateStatus('이체완료')" class="px-2 py-1 rounded-lg bg-white border border-gray-300 text-gray-400 hover:bg-gray-100 transition duration-200 text-[10px] font-medium flex items-center gap-1">
-                  <i class="fa-solid fa-paper-plane text-[9px]"></i>
-                  <span>이체완료</span>
-                </button>
-              </template>
-              <button
-                  v-if="expense.userId === authStore.currentUserUid || authStore.isAdmin"
-                  @click="confirmDelete"
-                  class="px-2 py-1 rounded-lg bg-white border border-gray-300 text-gray-400 hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition duration-200 text-[10px] font-medium flex items-center gap-1"
-                  title="삭제"
-              >
-                <i class="fa-solid fa-trash text-[9px]"></i>
-                <span>삭제</span>
-              </button>
-            </div>
-          </template>
+          <span
+              @click="editAmountField(expense.id!, expense.amount)"
+              class="cursor-pointer underline decoration-dotted text-primary hover:text-primary-dark transition-colors"
+              v-if="expense.userId === authStore.currentUserUid || authStore.isAdmin"
+          >
+            {{ expense.amount ? expense.amount.toLocaleString() : '0' }}원
+          </span>
+          <span v-else>{{ expense.amount ? expense.amount.toLocaleString() : '0' }}원</span>
+        </h3>
+
+        <div
+            :class="[
+              'px-2 py-1 rounded-md text-xs font-bold border',
+              expense.status === '수령확인' ? 'bg-primary text-white border-primary' :
+              expense.status === '이체완료' ? 'bg-blue-100 text-blue-700 border-blue-200' :
+              expense.status === '보류' ? 'bg-orange-100 text-orange-700 border-orange-200' :
+              'bg-amber-100 text-amber-700 border-amber-200'
+            ]"
+        >
+          {{ expense.status }}
         </div>
-    </div>
-  </div>
-  <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4">
-    <div v-if="expense.thumbnailUrl || expense.originalImageUrl"
-         class="w-[150px] h-[150px] flex-shrink-0 border border-gray-200 rounded-md overflow-hidden bg-gray-50 flex items-center justify-center">
-      <img :src="expense.thumbnailUrl || expense.originalImageUrl"
-           alt="영수증 이미지"
-           class="max-w-full max-h-full object-contain cursor-pointer hover:opacity-80 transition-opacity"
-           @click="openImageModal(expense.originalImageUrl)">
+      </div>
+
+      <div class="flex items-center justify-between text-sm text-gray-500">
+        <div class="flex items-center gap-1">
+          <i class="fa-regular fa-user text-xs"></i>
+          <span>{{ expense.uploaderEmail?.split('@')[0] || expense.userId }}</span>
+        </div>
+      </div>
     </div>
 
-    <pre
-        class="m-0 p-3 bg-gray-50 rounded-md flex-grow max-w-full sm:max-w-[calc(100%-150px-1rem)] whitespace-pre-wrap break-words text-sm text-gray-700 cursor-pointer hover:bg-gray-100 border border-gray-100 transition-colors duration-200 ease-in-out"
-        @click="openDescriptionModal(expense.description)"
-    >
-      {{ expense.description.length > 150 ? expense.description.substring(0, 150) + '...' : expense.description }}
-    </pre>
-  </div>
-</li>
+    <!-- 버튼 영역: 모바일에서 더 접근하기 편하도록 분리 -->
+    <div v-if="expense.userId === authStore.currentUserUid || authStore.isAdmin" class="flex flex-wrap gap-2 mb-4 p-2 bg-gray-50 rounded-lg border border-gray-100">
+      <template v-if="expense.status === '정산신청'">
+        <button @click="updateStatus('이체완료')" class="flex-1 min-w-[80px] px-3 py-1.5 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition-colors text-xs font-bold flex items-center justify-center gap-1">
+          <i class="fa-solid fa-paper-plane text-[10px]"></i>
+          <span>이체완료</span>
+        </button>
+        <button @click="updateStatus('보류')" class="px-3 py-1.5 rounded-md bg-white border border-gray-300 text-gray-500 hover:bg-gray-100 transition-colors text-xs font-medium flex items-center justify-center gap-1">
+          <i class="fa-solid fa-pause text-[10px]"></i>
+          <span>보류</span>
+        </button>
+      </template>
+      <template v-else-if="expense.status === '보류'">
+        <button @click="updateStatus('정산신청')" class="flex-1 px-3 py-1.5 rounded-md bg-amber-500 text-white hover:bg-amber-600 transition-colors text-xs font-bold flex items-center justify-center gap-1">
+          <i class="fa-solid fa-redo text-[10px]"></i>
+          <span>정산신청</span>
+        </button>
+      </template>
+      <template v-else-if="expense.status === '이체완료'">
+        <button v-if="expense.userId === authStore.currentUserUid" @click="updateStatus('수령확인')" class="flex-1 px-3 py-1.5 rounded-md bg-green-500 text-white hover:bg-green-600 transition-colors text-xs font-bold flex items-center justify-center gap-1">
+          <i class="fa-solid fa-check-double text-[10px]"></i>
+          <span>수령확인</span>
+        </button>
+        <button @click="updateStatus('정산신청')" class="px-3 py-1.5 rounded-md bg-white border border-gray-300 text-gray-500 hover:bg-gray-100 transition-colors text-xs font-medium flex items-center justify-center gap-1">
+          <i class="fa-solid fa-redo text-[10px]"></i>
+          <span>정산신청</span>
+        </button>
+      </template>
+      <template v-else-if="expense.status === '수령확인'">
+        <button v-if="expense.userId === authStore.currentUserUid" @click="updateStatus('이체완료')" class="flex-1 px-3 py-1.5 rounded-md bg-white border border-gray-300 text-gray-500 hover:bg-gray-100 transition-colors text-xs font-medium flex items-center justify-center gap-1">
+          <i class="fa-solid fa-redo text-[10px]"></i>
+          <span>이체완료</span>
+        </button>
+      </template>
+
+      <button
+          v-if="expense.userId === authStore.currentUserUid || authStore.isAdmin"
+          @click="confirmDelete"
+          class="px-3 py-1.5 rounded-md bg-white border border-red-200 text-red-500 hover:bg-red-50 transition-colors text-xs font-medium flex items-center justify-center gap-1"
+          title="삭제"
+      >
+        <i class="fa-solid fa-trash text-[10px]"></i>
+        <span>삭제</span>
+      </button>
+    </div>
+
+    <!-- 하단 영역: 이미지 및 설명 -->
+    <div class="flex flex-col sm:flex-row gap-4">
+      <div v-if="expense.thumbnailUrl || expense.originalImageUrl"
+           class="w-full sm:w-[120px] md:w-[150px] aspect-square flex-shrink-0 border border-gray-100 rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center">
+        <img :src="expense.thumbnailUrl || expense.originalImageUrl"
+             alt="영수증 이미지"
+             class="max-w-full max-h-full object-contain cursor-pointer hover:scale-105 transition-transform duration-200"
+             @click="openImageModal(expense.originalImageUrl)">
+      </div>
+
+      <div class="flex-grow min-w-0">
+        <pre
+            class="m-0 p-3 bg-gray-50 rounded-lg h-full whitespace-pre-wrap break-words text-sm text-gray-700 cursor-pointer hover:bg-gray-100 border border-gray-100 transition-colors"
+            @click="openDescriptionModal(expense.description)"
+        >{{ expense.description.length > 150 ? expense.description.substring(0, 150) + '...' : expense.description }}</pre>
+      </div>
+    </div>
+  </li>
 
 <div v-if="isImageModalOpen"
      class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
@@ -118,7 +119,7 @@
         @click="closeImageModal"
         class="absolute top-4 right-4 text-white text-4xl bg-gray-800 bg-opacity-50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-opacity-75 transition-colors"
         aria-label="모달 닫기"
-    >&times;</button>
+    ><i class="fa-solid fa-times text-base"></i></button>
   </div>
 </div>
 
@@ -132,7 +133,7 @@
         @click="closeDescriptionModal"
         class="absolute top-4 right-4 text-gray-700 text-3xl bg-gray-100 rounded-full w-8 h-8 flex items-center justify-center hover:bg-gray-200 transition-colors"
         aria-label="모달 닫기"
-    >&times;</button>
+    ><i class="fa-solid fa-times text-base"></i></button>
   </div>
 </div>
 </template>
