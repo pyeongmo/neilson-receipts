@@ -116,33 +116,37 @@
         >{{ expense.description.length > 150 ? expense.description.substring(0, 150) + '...' : expense.description }}</pre>
       </div>
     </div>
+
+    <Teleport to="body">
+      <div v-if="isImageModalOpen"
+           class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+           @click.self="closeImageModal">
+        <div class="relative max-w-5xl max-h-[90vh] border border-gray-700"> <img :src="currentImageUrl" alt="전체화면 영수증 이미지" class="max-w-full max-h-[90vh] object-contain">
+          <button
+              @click="closeImageModal"
+              class="absolute top-4 right-4 text-white text-4xl bg-gray-800 bg-opacity-50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-opacity-75 transition-colors"
+              aria-label="모달 닫기"
+          ><i class="fa-solid fa-times text-base"></i></button>
+        </div>
+      </div>
+    </Teleport>
+
+    <Teleport to="body">
+      <div v-if="isDescriptionModalOpen"
+           class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+           @click.self="closeDescriptionModal">
+        <div class="relative bg-white rounded-lg p-6 max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-200">
+          <h3 class="text-xl font-bold mb-4 text-primary-dark">영수증 상세 내용</h3>
+          <pre class="whitespace-pre-wrap break-words text-base text-gray-800">{{ currentDescription }}</pre>
+          <button
+              @click="closeDescriptionModal"
+              class="absolute top-4 right-4 text-gray-700 text-3xl bg-gray-100 rounded-full w-8 h-8 flex items-center justify-center hover:bg-gray-200 transition-colors"
+              aria-label="모달 닫기"
+          ><i class="fa-solid fa-times text-base"></i></button>
+        </div>
+      </div>
+    </Teleport>
   </li>
-
-<div v-if="isImageModalOpen"
-     class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
-     @click.self="closeImageModal">
-  <div class="relative max-w-5xl max-h-[90vh] border border-gray-700"> <img :src="currentImageUrl" alt="전체화면 영수증 이미지" class="max-w-full max-h-[90vh] object-contain">
-    <button
-        @click="closeImageModal"
-        class="absolute top-4 right-4 text-white text-4xl bg-gray-800 bg-opacity-50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-opacity-75 transition-colors"
-        aria-label="모달 닫기"
-    ><i class="fa-solid fa-times text-base"></i></button>
-  </div>
-</div>
-
-<div v-if="isDescriptionModalOpen"
-     class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
-     @click.self="closeDescriptionModal">
-  <div class="relative bg-white rounded-lg p-6 max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-200">
-    <h3 class="text-xl font-bold mb-4 text-primary-dark">영수증 상세 내용</h3>
-    <pre class="whitespace-pre-wrap break-words text-base text-gray-800">{{ currentDescription }}</pre>
-    <button
-        @click="closeDescriptionModal"
-        class="absolute top-4 right-4 text-gray-700 text-3xl bg-gray-100 rounded-full w-8 h-8 flex items-center justify-center hover:bg-gray-200 transition-colors"
-        aria-label="모달 닫기"
-    ><i class="fa-solid fa-times text-base"></i></button>
-  </div>
-</div>
 </template>
 
 <script setup lang="ts">

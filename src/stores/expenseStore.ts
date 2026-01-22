@@ -208,10 +208,22 @@ export const useExpenseStore = defineStore('expense', {
 
             try {
                 const expenseRef = doc(db, 'expenses', expenseId);
+                const updatedAt = Timestamp.now();
                 await updateDoc(expenseRef, {
                     status: newStatus,
-                    updatedAt: Timestamp.now(),
+                    updatedAt: updatedAt,
                 });
+
+                // 로컬 상태 수동 업데이트 (onSnapshot 범위 밖의 데이터 대응)
+                const index = this.expenses.findIndex(e => e.id === expenseId);
+                if (index !== -1) {
+                    this.expenses[index] = {
+                        ...this.expenses[index]!,
+                        status: newStatus,
+                        updatedAt: updatedAt
+                    };
+                }
+
                 console.log(`Expense ${expenseId} status updated to ${newStatus}`);
             } catch (error: any) {
                 console.error('Error updating expense status:', error.message);
@@ -235,6 +247,10 @@ export const useExpenseStore = defineStore('expense', {
             try {
                 const expenseDocRef = doc(db, 'expenses', expenseId);
                 await deleteDoc(expenseDocRef);
+
+                // 로컬 상태 수동 업데이트
+                this.expenses = this.expenses.filter(e => e.id !== expenseId);
+
                 console.log(`Expense ${expenseId} deletion requested to Firestore.`);
             } catch (error: any) {
                 console.error('Error deleting expense:', error.message);
@@ -260,8 +276,9 @@ export const useExpenseStore = defineStore('expense', {
 
             try {
                 const expenseRef = doc(db, 'expenses', expenseId);
+                const updatedAt = Timestamp.now();
                 let updateData: { [key: string]: any } = {
-                    updatedAt: Timestamp.now(), // 업데이트 시간 기록
+                    updatedAt: updatedAt, // 업데이트 시간 기록
                 };
 
                 if (field === 'amount') {
@@ -282,6 +299,16 @@ export const useExpenseStore = defineStore('expense', {
                 }
 
                 await updateDoc(expenseRef, updateData);
+
+                // 로컬 상태 수동 업데이트
+                const index = this.expenses.findIndex(e => e.id === expenseId);
+                if (index !== -1) {
+                    this.expenses[index] = {
+                        ...this.expenses[index]!,
+                        ...updateData
+                    };
+                }
+
                 console.log(`Expense ${expenseId} field '${field}' updated successfully.`);
 
             } catch (error: any) {
