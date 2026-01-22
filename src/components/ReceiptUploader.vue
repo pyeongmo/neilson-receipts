@@ -1,10 +1,10 @@
 <template>
-  <div class="max-w-md mx-auto my-10 p-8 rounded-lg shadow-lg bg-white text-center box-border">
+  <div class="max-w-md mx-auto my-10 p-8 rounded-lg bg-white text-center box-border border border-gray-100">
     <h2 class="text-3xl font-semibold text-gray-800 mb-6">영수증 업로드</h2>
 
     <div v-if="!authStore.isLoggedIn && !authStore.loading" class="p-4 rounded-lg mb-5 text-yellow-800 bg-yellow-100 border border-yellow-300">
       <p class="text-base">⚠️ 영수증을 업로드하려면 먼저 로그인해야 합니다.</p>
-      <button @click="authStore.loginWithGoogle()" :disabled="authStore.loading" class="mt-4 px-5 py-2 bg-blue-600 text-white rounded-lg text-base font-bold cursor-pointer transition duration-300 ease-in-out whitespace-nowrap hover:bg-blue-700 hover:translate-y-px shadow-md">
+      <button @click="authStore.loginWithGoogle()" :disabled="authStore.loading" class="mt-4 px-5 py-2 bg-primary text-white rounded-lg text-base font-bold cursor-pointer transition duration-300 ease-in-out whitespace-nowrap hover:bg-primary-dark hover:translate-y-px">
         Google 로그인
       </button>
     </div>
@@ -42,7 +42,7 @@
             type="button"
             @click="takePhoto"
             :disabled="expenseStore.uploading"
-            class="flex-1 inline-flex items-center justify-center p-4 md:p-5 bg-green-500 text-white rounded-lg text-lg font-bold cursor-pointer transition duration-300 ease-in-out box-border shadow-md hover:bg-green-600 hover:translate-y-[-2px] disabled:bg-gray-400 disabled:cursor-not-allowed disabled:shadow-none"
+            class="flex-1 inline-flex items-center justify-center p-4 md:p-5 bg-green-500 text-white rounded-lg text-lg font-bold cursor-pointer transition duration-300 ease-in-out box-border hover:bg-green-600 hover:translate-y-[-2px] disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
           <i class="fas fa-camera mr-3 text-xl"></i>
           사진 촬영
@@ -52,10 +52,10 @@
             @click="pickFromGallery"
             :disabled="expenseStore.uploading"
             :class="[
-            'flex-1 inline-flex items-center justify-center p-4 md:p-5 rounded-lg text-lg font-bold cursor-pointer transition duration-300 ease-in-out box-border disabled:bg-gray-400 disabled:cursor-not-allowed disabled:shadow-none',
+            'flex-1 inline-flex items-center justify-center p-4 md:p-5 rounded-lg text-lg font-bold cursor-pointer transition duration-300 ease-in-out box-border disabled:bg-gray-400 disabled:cursor-not-allowed',
             canTakePhoto
-              ? 'bg-slate-600 text-white shadow-md hover:bg-slate-700 hover:translate-y-[-2px]'
-              : 'bg-indigo-600 text-white shadow-lg hover:bg-indigo-700 hover:translate-y-[-2px]'
+              ? 'bg-slate-600 text-white hover:bg-slate-700 hover:translate-y-[-2px]'
+              : 'bg-primary text-white hover:bg-primary-dark hover:translate-y-[-2px]'
           ]"
         >
           <i class="fas fa-image mr-3 text-xl"></i>
@@ -65,14 +65,14 @@
 
       <div v-if="previewImage" class="mt-2 p-4 border border-gray-200 rounded-lg w-full box-border bg-gray-50">
         <h3 class="text-base text-gray-700 mb-2">미리보기:</h3>
-        <img :src="previewImage" alt="영수증 미리보기" class="max-w-full h-auto rounded-md shadow-md block mx-auto" />
+        <img :src="previewImage" alt="영수증 미리보기" class="max-w-full h-auto rounded-md block mx-auto" />
       </div>
 
       <button
           @click="uploadSelectedFile"
           :disabled="!selectedFile || expenseStore.uploading"
-          class="px-5 py-3 bg-blue-600 text-white rounded-lg text-lg font-bold cursor-pointer transition duration-300 ease-in-out w-full box-border shadow-md
-                 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:shadow-none hover:enabled:bg-blue-700 hover:enabled:translate-y-[-2px]"
+          class="px-5 py-3 bg-primary text-white rounded-lg text-lg font-bold cursor-pointer transition duration-300 ease-in-out w-full box-border
+                 disabled:bg-gray-400 disabled:cursor-not-allowed hover:enabled:bg-primary-dark hover:enabled:translate-y-[-2px]"
       >
         <span v-if="!expenseStore.uploading">업로드</span>
         <span v-else>업로드 중 ({{ Math.floor(expenseStore.uploadProgress) }}%)</span>

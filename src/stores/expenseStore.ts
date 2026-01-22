@@ -12,7 +12,7 @@ import {
     type UploadTask
 } from "firebase/storage";
 import {db, auth, storage} from '../firebaseConfig';
-import {type Expense} from '../types/Expense';
+import {type Expense, type ExpenseStatus} from '../types/Expense';
 
 export const useExpenseStore = defineStore('expense', {
     state: () => ({
@@ -153,7 +153,7 @@ export const useExpenseStore = defineStore('expense', {
             try {
                 const q = query(
                     collection(db, 'expenses'),
-                    where('isProcessed', '==', false)
+                    where('status', 'in', ['정산신청', '보류'])
                 );
                 const querySnapshot = await getDocs(q);
                 querySnapshot.forEach((doc) => {
@@ -196,11 +196,11 @@ export const useExpenseStore = defineStore('expense', {
             }
         },
         /**
-         * 특정 지출 내역의 처리 완료 상태를 토글하고 Firestore에 업데이트합니다.
-         * @param expenseId 토글할 지출 내역의 ID
-         * @param currentStatus 현재 isProcessed 상태
+         * 특정 지출 내역의 상태를 업데이트하고 Firestore에 반영합니다.
+         * @param expenseId 업데이트할 지출 내역의 ID
+         * @param newStatus 변경할 새로운 상태
          */
-        async toggleExpenseProcessedStatus(expenseId: string, currentStatus: boolean) {
+        async updateExpenseStatus(expenseId: string, newStatus: ExpenseStatus) {
             if (!auth.currentUser) {
                 this.error = '로그인해야 지출 내역을 업데이트할 수 있습니다.';
                 return;
@@ -209,13 +209,13 @@ export const useExpenseStore = defineStore('expense', {
             try {
                 const expenseRef = doc(db, 'expenses', expenseId);
                 await updateDoc(expenseRef, {
-                    isProcessed: !currentStatus, // 현재 상태의 반대로 토글
+                    status: newStatus,
                     updatedAt: Timestamp.now(),
                 });
-                console.log(`Expense ${expenseId} processed status toggled to ${!currentStatus}`);
+                console.log(`Expense ${expenseId} status updated to ${newStatus}`);
             } catch (error: any) {
-                console.error('Error toggling expense processed status:', error.message);
-                this.error = `지출 내역 업데이트 실패: ${error.message}`;
+                console.error('Error updating expense status:', error.message);
+                this.error = `지출 내역 상태 업데이트 실패: ${error.message}`;
             }
         },
         /**

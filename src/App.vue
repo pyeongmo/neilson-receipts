@@ -2,27 +2,27 @@
   <div id="app-root" class="flex flex-col min-h-screen bg-gray-100 text-gray-800 font-sans">
     <header
         :class="[
-        'p-5 md:px-8 mb-5 bg-white shadow-md border-b border-gray-200 flex items-center justify-between flex-wrap gap-4',
+        'p-5 md:px-8 mb-5 bg-white border-b border-gray-200 flex items-center justify-between flex-wrap gap-4',
         {
-          'text-blue-600 font-bold': authStore.loading,
-          'bg-green-50 text-green-700': authStore.isLoggedIn && !authStore.loading,
+          'text-primary font-bold': authStore.loading,
+          'bg-primary/5 text-primary-dark': authStore.isLoggedIn && !authStore.loading,
           'bg-gray-50 text-gray-600': !authStore.isLoggedIn && !authStore.loading
         }
       ]"
     >
       <div v-if="authStore.loading" class="text-lg">인증 상태 확인 중...</div>
       <div v-else-if="authStore.isLoggedIn" class="flex items-center justify-between w-full flex-wrap gap-4">
-        <p class="text-lg font-medium flex-grow">환영합니다, <strong class="text-blue-700">{{ authStore.currentUserEmail?.split('@')[0] }}</strong>님!</p>
+        <p class="text-lg font-medium flex-grow">환영합니다, <strong class="text-primary-dark">{{ authStore.currentUserEmail?.split('@')[0] }}</strong>님!</p>
         <div class="flex items-center gap-3">
           <button
               @click="openSummaryModal"
-              class="px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75 transition-colors duration-200"
+              class="px-4 py-2 rounded-lg bg-primary text-white font-semibold hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-75 transition-colors duration-200"
           >
             미처리 현황
           </button>
           <button
               @click="handleLogout"
-              class="px-4 py-2 rounded-lg bg-red-500 text-white font-semibold shadow-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition-colors duration-200"
+              class="px-4 py-2 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition-colors duration-200"
           >
             로그아웃
           </button>
@@ -30,7 +30,7 @@
       </div>
       <div v-else class="flex flex-col items-start gap-4 w-full">
         <p class="text-lg font-medium">로그인이 필요합니다.</p>
-        <button @click="handleLogin" class="px-5 py-2 bg-blue-600 text-white rounded-lg text-base font-bold cursor-pointer transition duration-300 ease-in-out whitespace-nowrap hover:bg-blue-700 hover:translate-y-px shadow-md">
+        <button @click="handleLogin" class="px-5 py-2 bg-primary text-white rounded-lg text-base font-bold cursor-pointer transition duration-300 ease-in-out whitespace-nowrap hover:bg-primary-dark hover:translate-y-px">
           Google 계정으로 로그인
         </button>
         <p v-if="authStore.error" class="text-red-600 font-bold mt-2 w-full text-center">{{ authStore.error }}</p>
@@ -113,7 +113,7 @@ onMounted(() => {
   authStore.initializeGoogleOneTap();
 
   unsubscribeFromExpenseActions = expenseStore.$onAction(({ name, after, onError }) => {
-    if (['toggleExpenseProcessedStatus', 'deleteExpense', 'updateExpenseField'].includes(name)) {
+    if (['updateExpenseStatus', 'deleteExpense', 'updateExpenseField'].includes(name)) {
       saveWindowScrollPosition();
     }
     after(() => {

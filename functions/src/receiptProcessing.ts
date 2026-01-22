@@ -160,7 +160,7 @@ export const processReceiptImage = functions
       description: fullText.substring(0, Math.min(fullText.length, 500)),
       originalImageUrl: originalImageUrl,
       thumbnailUrl: thumbnailUrl || '',
-      isProcessed: false,
+      status: '정산신청',
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     };

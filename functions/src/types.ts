@@ -11,7 +11,7 @@ export interface ExpenseToSave {
     description: string;
     originalImageUrl: string;
     thumbnailUrl: string;
-    isProcessed: boolean;
+    status: '정산신청' | '보류' | '이체완료' | '수령확인';
     createdAt: admin.firestore.Timestamp | admin.firestore.FieldValue; // FieldValue를 허용
     updatedAt: admin.firestore.Timestamp | admin.firestore.FieldValue; // FieldValue를 허용
 }
