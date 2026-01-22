@@ -1,12 +1,14 @@
 // src/stores/authStore.ts
 import { defineStore } from 'pinia';
-import { auth, googleProvider } from '../firebaseConfig'; // Firebase 설정 파일 임포트
+import { auth, googleProvider, db } from '../firebaseConfig'; // Firebase 설정 파일 임포트
 import { type User, onAuthStateChanged, signInWithPopup, type UserCredential, GoogleAuthProvider, signInWithCredential, signOut } from 'firebase/auth'; // Firebase Auth 타입 임포트
+import { doc, getDoc } from 'firebase/firestore';
 
 export const useAuthStore = defineStore('auth', {
     state: () => ({
         user: null as User | null, // Firebase User 객체를 저장 (로그아웃 시 null)
         isLoggedIn: false,
+        isAdmin: false, // 마스터 권한 여부
         loading: true, // 초기 로딩 상태 (Firebase Auth 상태 확인 중)
         error: null as string | null, // 로그인/로그아웃 관련 에러 메시지
         oneTapReady: false, // One Tap 초기화 상태
@@ -36,6 +38,21 @@ export const useAuthStore = defineStore('auth', {
 
                     this.user = user;
                     this.isLoggedIn = true;
+                    
+                    // 관리자 권한 확인
+                    if (user.email) {
+                        try {
+                            const adminDoc = await getDoc(doc(db, 'permissions', user.email));
+                            this.isAdmin = adminDoc.exists() && adminDoc.data()?.isAdmin === true;
+                            console.log('Admin check for', user.email, ':', this.isAdmin);
+                        } catch (e) {
+                            console.error('Failed to check admin permission:', e);
+                            this.isAdmin = false;
+                        }
+                    } else {
+                        this.isAdmin = false;
+                    }
+
                     console.log('Auth state changed: User is logged in.', user.email);
 
                   // 로그인된 상태에서는 One Tap 프롬프트/자동선택을 취소/억제
@@ -49,6 +66,7 @@ export const useAuthStore = defineStore('auth', {
                 } else {
                     this.user = null;
                     this.isLoggedIn = false;
+                    this.isAdmin = false;
                     console.log('Auth state changed: User is logged out.');
                 }
                 this.loading = false;

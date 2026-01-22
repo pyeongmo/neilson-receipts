@@ -5,7 +5,7 @@
         <span
             @click="editDateField(expense.id!, formatDateToYYMMDD(expense.date))"
             class="cursor-pointer underline decoration-dotted text-primary hover:text-primary-dark"
-            v-if="expense.userId === authStore.currentUserUid"
+            v-if="expense.userId === authStore.currentUserUid || authStore.isAdmin"
         >
           {{ formatDateToYYMMDD(expense.date) }}
         </span>
@@ -16,7 +16,7 @@
         <span
             @click="editAmountField(expense.id!, expense.amount)"
             class="cursor-pointer underline decoration-dotted text-primary hover:text-primary-dark"
-            v-if="expense.userId === authStore.currentUserUid"
+            v-if="expense.userId === authStore.currentUserUid || authStore.isAdmin"
         >
           {{ expense.amount ? expense.amount.toLocaleString() : '0' }}원
         </span>
@@ -27,31 +27,69 @@
       <div class="flex items-center justify-end gap-3 flex-wrap">
         <small class="text-gray-600 whitespace-nowrap text-sm">{{ expense.uploaderEmail?.split('@')[0] || expense.userId }}</small>
 
-        <div class="flex items-center text-sm whitespace-nowrap">
-          <select
-              v-if="expense.userId === authStore.currentUserUid"
-              :value="expense.status"
-              @change="handleStatusChange"
-              :class="[
-                  'p-1.5 rounded-lg border transition duration-200 ease-in-out cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50',
-                  expense.status === '수령확인' ? 'bg-primary text-white border-primary' : 'bg-gray-50 text-gray-700 border-gray-200 hover:border-primary/50'
-              ]"
-          >
-            <option v-for="status in statuses" :key="status" :value="status">{{ status }}</option>
-          </select>
-          <span
-              v-else
-              :class="[
-                  'px-3 py-1.5 rounded-lg border text-sm font-medium',
-                  expense.status === '수령확인' ? 'bg-primary text-white border-primary' : 'bg-gray-100 text-gray-600 border-gray-200'
-              ]"
-          >
-            {{ expense.status }}
-          </span>
+        <div class="flex items-center text-sm whitespace-nowrap gap-3 bg-gray-50 p-1.5 rounded-lg border border-gray-100">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">상태:</span>
+            <span
+                :class="[
+                  'px-2 py-1 rounded-md text-xs font-bold border transition-colors',
+                  expense.status === '수령확인' ? 'bg-primary text-white border-primary' :
+                  expense.status === '이체완료' ? 'bg-blue-100 text-blue-700 border-blue-200' :
+                  expense.status === '보류' ? 'bg-orange-100 text-orange-700 border-orange-200' :
+                  'bg-amber-100 text-amber-700 border-amber-200'
+                ]"
+            >
+              {{ expense.status }}
+            </span>
+          </div>
+
+          <template v-if="expense.userId === authStore.currentUserUid || authStore.isAdmin">
+            <div class="w-px h-4 bg-gray-200 mx-1"></div>
+            <div class="flex items-center gap-1.5">
+              <template v-if="expense.status === '정산신청'">
+                <button @click="updateStatus('이체완료')" class="px-3 py-1 rounded-lg bg-white border border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white transition duration-200 text-xs font-semibold flex items-center gap-1">
+                  <i class="fa-solid fa-paper-plane text-[10px]"></i>
+                  <span>이체완료</span>
+                </button>
+                <button @click="updateStatus('보류')" class="px-2 py-1 rounded-lg bg-white border border-gray-300 text-gray-400 hover:bg-gray-100 transition duration-200 text-[10px] font-medium flex items-center gap-1">
+                  <i class="fa-solid fa-pause text-[9px]"></i>
+                  <span>보류</span>
+                </button>
+              </template>
+              <template v-else-if="expense.status === '보류'">
+                <button @click="updateStatus('정산신청')" class="px-2 py-1 rounded-lg bg-white border border-gray-300 text-gray-400 hover:bg-gray-100 transition duration-200 text-[10px] font-medium flex items-center gap-1">
+                  <i class="fa-solid fa-redo text-[9px]"></i>
+                  <span>정산신청</span>
+                </button>
+              </template>
+              <template v-else-if="expense.status === '이체완료'">
+                <button v-if="expense.userId === authStore.currentUserUid" @click="updateStatus('수령확인')" class="px-3 py-1 rounded-lg bg-white border border-green-500 text-green-500 hover:bg-green-500 hover:text-white transition duration-200 text-xs font-semibold flex items-center gap-1">
+                  <i class="fa-solid fa-check-double text-[10px]"></i>
+                  <span>수령확인</span>
+                </button>
+                <button @click="updateStatus('정산신청')" class="px-2 py-1 rounded-lg bg-white border border-gray-300 text-gray-400 hover:bg-gray-100 transition duration-200 text-[10px] font-medium flex items-center gap-1">
+                  <i class="fa-solid fa-redo text-[9px]"></i>
+                  <span>정산신청</span>
+                </button>
+              </template>
+              <template v-else-if="expense.status === '수령확인'">
+                <button v-if="expense.userId === authStore.currentUserUid" @click="updateStatus('이체완료')" class="px-2 py-1 rounded-lg bg-white border border-gray-300 text-gray-400 hover:bg-gray-100 transition duration-200 text-[10px] font-medium flex items-center gap-1">
+                  <i class="fa-solid fa-paper-plane text-[9px]"></i>
+                  <span>이체완료</span>
+                </button>
+              </template>
+              <button
+                  v-if="expense.userId === authStore.currentUserUid || authStore.isAdmin"
+                  @click="confirmDelete"
+                  class="px-2 py-1 rounded-lg bg-white border border-gray-300 text-gray-400 hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition duration-200 text-[10px] font-medium flex items-center gap-1"
+                  title="삭제"
+              >
+                <i class="fa-solid fa-trash text-[9px]"></i>
+                <span>삭제</span>
+              </button>
+            </div>
+          </template>
         </div>
-        <button v-if="expense.userId === authStore.currentUserUid" @click="confirmDelete" class="bg-red-500 text-white border-none px-3 py-2 rounded-lg cursor-pointer text-sm flex items-center whitespace-nowrap transition duration-200 ease-in-out hover:bg-red-600">
-        <i class="fas fa-trash mr-1"></i> 삭제
-      </button>
     </div>
   </div>
   <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4">
@@ -119,7 +157,7 @@ const currentImageUrl = ref('');
 const isDescriptionModalOpen = ref(false);
 const currentDescription = ref('');
 
-const statuses = ['정산신청', '보류', '이체완료', '수령확인'] as const;
+// const statuses = ['정산신청', '보류', '이체완료', '수령확인'] as const;
 
 const formatDateToYYMMDD = (timestamp: Timestamp | undefined) => {
   if (!timestamp) return '날짜 없음';
@@ -128,7 +166,7 @@ const formatDateToYYMMDD = (timestamp: Timestamp | undefined) => {
 };
 
 const editAmountField = async (expenseId: string, currentAmount: number) => {
-  if (props.expense.userId !== authStore.currentUserUid) return;
+  if (props.expense.userId !== authStore.currentUserUid && !authStore.isAdmin) return;
   const newAmountStr = window.prompt(`금액을 수정하세요: (현재: ${currentAmount.toLocaleString()}원)`, String(currentAmount));
   if (newAmountStr !== null && newAmountStr.trim() !== '') {
     await expenseStore.updateExpenseField(expenseId, 'amount', newAmountStr);
@@ -138,7 +176,7 @@ const editAmountField = async (expenseId: string, currentAmount: number) => {
 };
 
 const editDateField = async (expenseId: string, currentDate: string) => {
-  if (props.expense.userId !== authStore.currentUserUid) return;
+  if (props.expense.userId !== authStore.currentUserUid && !authStore.isAdmin) return;
   const newDateStr = window.prompt(`날짜를 수정하세요: (현재: ${currentDate})\n형식:YYYY-MM-DD`, currentDate);
   if (newDateStr !== null && newDateStr.trim() !== '') {
     await expenseStore.updateExpenseField(expenseId, 'date', newDateStr);
@@ -147,15 +185,23 @@ const editDateField = async (expenseId: string, currentDate: string) => {
   }
 };
 
-const handleStatusChange = async (event: Event) => {
-  if (props.expense.userId !== authStore.currentUserUid) return;
-  const target = event.target as HTMLSelectElement;
-  const newStatus = target.value as any;
+const updateStatus = async (newStatus: '정산신청' | '보류' | '이체완료' | '수령확인') => {
+  if (props.expense.userId !== authStore.currentUserUid && !authStore.isAdmin) return;
+
+  // 이체완료 <-> 수령확인 간의 전환은 본인만 가능
+  const isTransferRelated = (props.expense.status === '이체완료' && newStatus === '수령확인') ||
+                            (props.expense.status === '수령확인' && newStatus === '이체완료');
+
+  if (isTransferRelated && props.expense.userId !== authStore.currentUserUid) {
+    alert('이체완료 및 수령확인 상태 변경은 본인 영수증인 경우에만 가능합니다.');
+    return;
+  }
+
   await expenseStore.updateExpenseStatus(props.expense.id!, newStatus);
 };
 
 const confirmDelete = async () => {
-  if (props.expense.userId !== authStore.currentUserUid) return;
+  if (props.expense.userId !== authStore.currentUserUid && !authStore.isAdmin) return;
   if (confirm('이 지출 내역과 연결된 이미지를 정말로 삭제하시겠습니까?')) {
     await expenseStore.deleteExpense(props.expense.id!);
   }
