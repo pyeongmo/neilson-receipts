@@ -14,17 +14,50 @@
       </ul>
     </div>
     <p v-else class="text-center text-gray-600 mt-10">아직 등록된 지출 내역이 없습니다.</p>
+
+    <!-- 무한 스크롤 감지용 요소 (로그인 상태이고 에러가 없을 때만 표시) -->
+    <div v-if="authStore.isLoggedIn && !expenseStore.error && !expenseStore.loading" ref="loadMoreTrigger" class="h-10 flex items-center justify-center mt-4">
+      <p v-if="expenseStore.isFetchingMore" class="text-gray-500">더 많은 내역을 불러오는 중...</p>
+      <p v-else-if="!expenseStore.hasMore && expenseStore.expenses.length > 0" class="text-gray-400 text-sm">모든 내역을 불러왔습니다.</p>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { watch } from 'vue';
+import { watch, ref, onMounted, onUnmounted } from 'vue';
 import { useAuthStore } from '../stores/authStore';
 import { useExpenseStore } from '../stores/expenseStore';
 import ExpenseItem from './ExpenseItem.vue'; // ExpenseItem 컴포넌트 임포트
 
 const authStore = useAuthStore();
 const expenseStore = useExpenseStore();
+
+const loadMoreTrigger = ref<HTMLElement | null>(null);
+let observer: IntersectionObserver | null = null;
+
+onMounted(() => {
+  observer = new IntersectionObserver((entries) => {
+    if (entries[0]?.isIntersecting) {
+      expenseStore.fetchMoreExpenses();
+    }
+  }, {
+    threshold: 1.0,
+    rootMargin: '100px' // 하단에 도달하기 전 미리 로드
+  });
+});
+
+// loadMoreTrigger 요소가 생성될 때마다 observe 실행
+watch(loadMoreTrigger, (newEl) => {
+  if (newEl && observer) {
+    observer.observe(newEl);
+  }
+});
+
+onUnmounted(() => {
+  if (observer) {
+    observer.disconnect();
+  }
+});
 
 watch(() => authStore.user, (newUser) => {
   if (newUser) {

@@ -2,7 +2,7 @@ import {defineStore} from 'pinia';
 import {
     collection, query, orderBy, limit, onSnapshot, type Unsubscribe,
     doc, updateDoc, deleteDoc, Timestamp,
-    where, getDocs,
+    where, getDocs, startAfter, type QueryDocumentSnapshot, type DocumentData,
 } from "firebase/firestore";
 import {
     ref,
@@ -18,6 +18,9 @@ export const useExpenseStore = defineStore('expense', {
     state: () => ({
         expenses: [] as Expense[], // Expense 인터페이스 배열로 타입 지정
         loading: false,
+        isFetchingMore: false,
+        hasMore: true,
+        lastVisible: null as QueryDocumentSnapshot<DocumentData> | null,
         error: null as string | null, // 에러 메시지 타입
         unsubscribe: null as Unsubscribe | null, // Firestore 구독 해제 함수 타입
 
@@ -27,7 +30,7 @@ export const useExpenseStore = defineStore('expense', {
         uploadProgress: 0 // 업로드 진행률 (0-100)
     }),
     actions: {
-        // 실시간으로 지출 내역을 불러오는 함수
+        // 실시간으로 지출 내역을 불러오는 함수 (초기 로딩)
         async fetchExpenses() {
             if (!auth.currentUser) {
                 this.error = '로그인이 필요합니다.';
@@ -36,6 +39,8 @@ export const useExpenseStore = defineStore('expense', {
 
             this.loading = true;
             this.error = null;
+            this.hasMore = true;
+            this.lastVisible = null;
 
             // 이전 구독 해제 (중복 구독 방지)
             if (this.unsubscribe) {
@@ -44,11 +49,11 @@ export const useExpenseStore = defineStore('expense', {
             }
 
             try {
-                // 최신 20개만 가져옴
+                // 초기 10개 가져옴
                 const q = query(
                     collection(db, 'expenses'),
                     orderBy('createdAt', 'desc'),
-                    limit(20)
+                    limit(10)
                 );
 
                 this.unsubscribe = onSnapshot(q, (snapshot) => {
@@ -59,6 +64,15 @@ export const useExpenseStore = defineStore('expense', {
                             id: doc.id,
                         } as Expense);
                     });
+
+                    // Snapshot 업데이트 시 lastVisible 갱신 (추가 로딩 기준점)
+                    if (snapshot.docs.length > 0) {
+                        this.lastVisible = snapshot.docs[snapshot.docs.length - 1]!;
+                    }
+
+                    // 초기 데이터 로드 시 hasMore 체크
+                    this.hasMore = snapshot.docs.length >= 10;
+
                     this.expenses = fetchedExpenses;
                     this.loading = false;
                     console.log('Expenses fetched:', this.expenses.length);
@@ -73,6 +87,50 @@ export const useExpenseStore = defineStore('expense', {
                 this.loading = false;
             }
         },
+        // 추가 데이터를 불러오는 함수 (무한 스크롤)
+        async fetchMoreExpenses() {
+            if (!auth.currentUser || !this.lastVisible || !this.hasMore || this.isFetchingMore) {
+                return;
+            }
+
+            this.isFetchingMore = true;
+            console.log('Fetching more expenses...');
+
+            try {
+                const q = query(
+                    collection(db, 'expenses'),
+                    orderBy('createdAt', 'desc'),
+                    startAfter(this.lastVisible),
+                    limit(10)
+                );
+
+                const querySnapshot = await getDocs(q);
+
+                if (querySnapshot.empty) {
+                    this.hasMore = false;
+                } else {
+                    const moreExpenses: Expense[] = [];
+                    querySnapshot.forEach((doc) => {
+                        moreExpenses.push({
+                            ...doc.data(),
+                            id: doc.id,
+                        } as Expense);
+                    });
+
+                    this.expenses = [...this.expenses, ...moreExpenses];
+                    this.lastVisible = querySnapshot.docs[querySnapshot.docs.length - 1]!;
+
+                    if (querySnapshot.docs.length < 10) {
+                        this.hasMore = false;
+                    }
+                }
+            } catch (error: any) {
+                console.error('Error fetching more expenses:', error);
+                this.error = '추가 지출 내역을 불러오는 데 실패했습니다.';
+            } finally {
+                this.isFetchingMore = false;
+            }
+        },
         stopFetchingExpenses() {
             if (this.unsubscribe) {
                 this.unsubscribe();
@@ -80,6 +138,8 @@ export const useExpenseStore = defineStore('expense', {
                 console.log('Stopped fetching expenses.');
             }
             this.expenses = []; // 로그아웃 시 목록 비우기
+            this.lastVisible = null;
+            this.hasMore = true;
         },
         /**
          * 완료되지 않은 영수증을 사용자(이메일)별로 묶어 금액을 요약합니다.
