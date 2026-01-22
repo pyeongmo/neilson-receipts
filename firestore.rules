@@ -11,9 +11,13 @@ service cloud.firestore {
     match /expenses/{expenseId} {
       allow read: if request.auth != null;
 
-      // 본인이거나 관리자인 경우에만 쓰기 허용
-      allow create: if request.auth != null;
-      allow update, delete: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+      // 업데이트와 삭제 규칙 분리
+      allow update: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+      // 삭제는 본인이더라도 '정산신청' 상태일 때만 가능, 관리자는 항상 가능
+      allow delete: if request.auth != null && (
+        (request.auth.uid == resource.data.userId && resource.data.status == '정산신청') ||
+        isAdmin()
+      );
     }
 
     // 'permissions' 컬렉션에 대한 규칙

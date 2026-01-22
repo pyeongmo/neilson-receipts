@@ -1,5 +1,12 @@
 <template>
-  <li :class="['list-none p-4 md:p-6 mb-6 rounded-xl bg-white text-left max-w-2xl mx-auto border border-gray-200 shadow-sm transition-all', { 'bg-primary/5 border-primary/20': expense.status === '수령확인' }]">
+  <li :class="['list-none p-4 md:p-6 mb-6 rounded-xl bg-white text-left max-w-2xl mx-auto border border-gray-200 shadow-sm transition-all relative overflow-hidden', { 'bg-primary/5 border-primary/20': expense.status === '수령확인', 'opacity-70 pointer-events-none': isUpdating }]">
+    <!-- 로딩 오버레이 -->
+    <div v-if="isUpdating" class="absolute inset-0 bg-white/40 flex items-center justify-center z-10 backdrop-blur-[1px]">
+      <div class="flex flex-col items-center gap-2">
+        <i class="fa-solid fa-circle-notch animate-spin text-primary text-2xl"></i>
+      </div>
+    </div>
+
     <!-- 상단 정보 영역: 날짜, 금액, 작성자, 상태 -->
     <div class="flex flex-col gap-3 mb-4">
       <div class="flex items-center justify-between">
@@ -82,7 +89,7 @@
       </template>
 
       <button
-          v-if="expense.userId === authStore.currentUserUid || authStore.isAdmin"
+          v-if="(expense.userId === authStore.currentUserUid && expense.status === '정산신청') || authStore.isAdmin"
           @click="confirmDelete"
           class="px-3 py-1.5 rounded-md bg-white border border-red-200 text-red-500 hover:bg-red-50 transition-colors text-xs font-medium flex items-center justify-center gap-1"
           title="삭제"
@@ -139,7 +146,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import {computed, ref} from "vue";
 import { useAuthStore } from '../stores/authStore';
 import { useExpenseStore } from '../stores/expenseStore';
 import { Timestamp } from 'firebase/firestore';
@@ -157,6 +164,7 @@ const currentImageUrl = ref('');
 
 const isDescriptionModalOpen = ref(false);
 const currentDescription = ref('');
+const isUpdating = ref(false);
 
 // const statuses = ['정산신청', '보류', '이체완료', '수령확인'] as const;
 
@@ -198,11 +206,26 @@ const updateStatus = async (newStatus: '정산신청' | '보류' | '이체완료
     return;
   }
 
-  await expenseStore.updateExpenseStatus(props.expense.id!, newStatus);
+  isUpdating.value = true;
+  try {
+    // 의도적인 지연을 주어 상태 변경이 순식간에 일어나는 것을 방지
+    await new Promise(resolve => setTimeout(resolve, 200));
+    await expenseStore.updateExpenseStatus(props.expense.id!, newStatus);
+  } finally {
+    isUpdating.value = false;
+  }
 };
 
+const canDelete = computed(() => {
+  if (authStore.isAdmin) return true;
+  return props.expense.userId === authStore.currentUserUid && props.expense.status === '정산신청';
+});
+
 const confirmDelete = async () => {
-  if (props.expense.userId !== authStore.currentUserUid && !authStore.isAdmin) return;
+  if (!canDelete.value) {
+    alert('정산신청 상태인 영수증만 삭제할 수 있습니다.');
+    return;
+  }
   if (confirm('이 지출 내역과 연결된 이미지를 정말로 삭제하시겠습니까?')) {
     await expenseStore.deleteExpense(props.expense.id!);
   }

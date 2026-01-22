@@ -5,13 +5,17 @@
     <p v-else-if="expenseStore.error" class="text-center text-red-600 p-5 bg-red-50 border border-red-100 rounded-lg mb-5">{{ expenseStore.error }}</p>
 
     <div v-else-if="expenseStore.expenses.length > 0">
-      <ul class="p-0 m-0">
+      <TransitionGroup
+          name="list"
+          tag="ul"
+          class="p-0 m-0"
+      >
         <ExpenseItem
             v-for="expense in expenseStore.expenses"
             :key="expense.id"
             :expense="expense"
         />
-      </ul>
+      </TransitionGroup>
     </div>
     <p v-else class="text-center text-gray-600 mt-10">아직 등록된 지출 내역이 없습니다.</p>
 
@@ -67,3 +71,22 @@ watch(() => authStore.user, (newUser) => {
   }
 }, { immediate: true });
 </script>
+
+<style scoped>
+.list-move,
+.list-enter-active,
+.list-leave-active {
+  transition: all 0.5s ease;
+}
+
+.list-enter-from,
+.list-leave-to {
+  opacity: 0;
+  transform: translateY(30px);
+}
+
+.list-leave-active {
+  position: absolute;
+  width: 100%;
+}
+</style>
