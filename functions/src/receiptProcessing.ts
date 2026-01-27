@@ -96,7 +96,7 @@ export const processReceiptImage = functions
         })
         .webp({ quality: 80 });
 
-      await pipeline.pipe(thumbnailStream).on('finish', () => console.log('Thumbnail generated and uploaded.'));
+      pipeline.pipe(thumbnailStream).on('finish', () => console.log('Thumbnail generated and uploaded.'));
       thumbnailUrl = `https://storage.googleapis.com/${fileBucket}/${encodeURIComponent(thumbnailName).replace(/%2F/g, '/')}`;
       // --- 썸네일 생성 및 업로드 로직 추가 종료 ---
 
