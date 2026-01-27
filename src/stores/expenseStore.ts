@@ -262,10 +262,10 @@ export const useExpenseStore = defineStore('expense', {
         /**
          * 특정 지출 내역의 필드를 업데이트합니다.
          * @param expenseId 업데이트할 지출 내역의 ID
-         * @param field 업데이트할 필드 이름 (예: 'amount', 'date')
+         * @param field 업데이트할 필드 이름 (예: 'amount', 'date', 'merchant', 'category')
          * @param value 새로운 값
          */
-        async updateExpenseField(expenseId: string, field: 'amount' | 'date', value: any) {
+        async updateExpenseField(expenseId: string, field: 'amount' | 'date' | 'merchant' | 'category', value: any) {
             if (!auth.currentUser) {
                 this.error = '로그인해야 지출 내역을 수정할 수 있습니다.';
                 return;
@@ -296,6 +296,11 @@ export const useExpenseStore = defineStore('expense', {
                         throw new Error('유효하지 않은 날짜 형식입니다. YYYY-MM-DD 형식으로 입력해주세요.');
                     }
                     updateData.date = Timestamp.fromDate(parsedDate); // Date 객체를 Firestore Timestamp로 변환
+                } else if (field === 'merchant' || field === 'category') {
+                    if (typeof value !== 'string' || value.trim() === '') {
+                        throw new Error(`${field === 'merchant' ? '가맹점' : '카테고리'}을 입력해주세요.`);
+                    }
+                    updateData[field] = value.trim();
                 }
 
                 await updateDoc(expenseRef, updateData);

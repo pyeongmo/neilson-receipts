@@ -46,9 +46,35 @@
       </div>
 
       <div class="flex items-center justify-between text-sm text-gray-500">
-        <div class="flex items-center gap-1">
-          <i class="fa-regular fa-user text-xs"></i>
-          <span>{{ expense.uploaderEmail?.split('@')[0] || expense.userId }}</span>
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-1">
+            <i class="fa-regular fa-user text-xs"></i>
+            <span>{{ expense.uploaderEmail?.split('@')[0] || expense.userId }}</span>
+          </div>
+
+          <div class="flex items-center gap-1">
+            <i class="fa-solid fa-store text-[10px]"></i>
+            <span
+                @click="editMerchantField(expense.id!, expense.merchant)"
+                class="cursor-pointer underline decoration-dotted hover:text-primary transition-colors"
+                v-if="expense.userId === authStore.currentUserUid || authStore.isAdmin"
+            >
+              {{ expense.merchant || '가맹점 없음' }}
+            </span>
+            <span v-else>{{ expense.merchant || '가맹점 없음' }}</span>
+          </div>
+
+          <div class="flex items-center gap-1">
+            <i class="fa-solid fa-tag text-[10px]"></i>
+            <span
+                @click="editCategoryField(expense.id!, expense.category)"
+                class="cursor-pointer underline decoration-dotted hover:text-primary transition-colors"
+                v-if="expense.userId === authStore.currentUserUid || authStore.isAdmin"
+            >
+              {{ expense.category || '카테고리 없음' }}
+            </span>
+            <span v-else>{{ expense.category || '카테고리 없음' }}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -195,6 +221,26 @@ const editDateField = async (expenseId: string, currentDate: string) => {
     await expenseStore.updateExpenseField(expenseId, 'date', newDateStr);
   } else if (newDateStr === '') {
     alert('날짜를 입력하지 않았습니다. 수정이 취소됩니다.');
+  }
+};
+
+const editMerchantField = async (expenseId: string, currentMerchant: string) => {
+  if (props.expense.userId !== authStore.currentUserUid && !authStore.isAdmin) return;
+  const newMerchant = window.prompt(`가맹점을 수정하세요:`, currentMerchant);
+  if (newMerchant !== null && newMerchant.trim() !== '') {
+    await expenseStore.updateExpenseField(expenseId, 'merchant', newMerchant);
+  } else if (newMerchant === '') {
+    alert('가맹점을 입력하지 않았습니다. 수정이 취소됩니다.');
+  }
+};
+
+const editCategoryField = async (expenseId: string, currentCategory: string) => {
+  if (props.expense.userId !== authStore.currentUserUid && !authStore.isAdmin) return;
+  const newCategory = window.prompt(`카테고리를 수정하세요:`, currentCategory);
+  if (newCategory !== null && newCategory.trim() !== '') {
+    await expenseStore.updateExpenseField(expenseId, 'category', newCategory);
+  } else if (newCategory === '') {
+    alert('카테고리를 입력하지 않았습니다. 수정이 취소됩니다.');
   }
 };
 
